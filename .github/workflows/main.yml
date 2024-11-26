@@ -10,37 +10,38 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    # 1. Checkout del código fuente
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # 2. Configuración de .NET
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0'
+      # 2. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0
 
-    # 3. Restaurar dependencias
-    - name: Restore dependencies
-      run: dotnet restore App.Prueba/App.Prueba.sln
+      # 3. Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore App.Prueba.sln
 
-    # 4. Compilar proyecto
-    - name: Build project
-      run: dotnet build App.Prueba/App.Prueba.sln --configuration Release --no-restore
+      # 4. Build project
+      - name: Build project
+        run: dotnet build App.Prueba.sln --configuration Release --no-restore
 
-    # 5. Publicar la aplicación
-    - name: Publish app
-      run: dotnet publish App.Prueba/App.Prueba.sln --configuration Release --output ./published --no-build
+      # 5. Publish app
+      - name: Publish app
+        run: dotnet publish App.Prueba/App.Prueba.csproj --configuration Release --output ./published
 
-    # 6. Deploy a IIS
-    - name: Deploy to IIS
-      run: |
-        $username = "jose.maria@teee3.com"
-        $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
-        $server = "t3-dev-iis.teee3.com"
+      # 6. Deploy to IIS using WinRM
+      - name: Deploy to IIS
+        run: |
+          $server = "t3-dev-iis.teee3.com"
+          $username = "jose.maria@teee3.com"
+          $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($username, $password)
 
-        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-          param ($source, $destination)
-          Copy-Item -Path $source -Destination $destination -Recurse -Force
-        } -ArgumentList "$(pwd)/published", "C:\App.Prueba"
+          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            param ($source, $destination)
+            # Copiar los archivos publicados al servidor IIS
+            Copy-Item -Path $source -Destination $destination -Recurse -Force
+          } -ArgumentList "$(pwd)/published", "C:\inetpub\wwwroot\App.Prueba"
