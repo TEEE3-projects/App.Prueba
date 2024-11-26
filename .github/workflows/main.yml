@@ -25,12 +25,23 @@ jobs:
         run: |
           dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj -c Release -o published
 
-      # 4. Copiar archivos al servidor IIS
+      # 4. Desplegar a IIS usando PowerShell
       - name: Deploy to IIS
-        uses: appleboy/scp-action@v0.1.0
-        with:
-          host: ${{ secrets.IIS_HOST }}
-          username: ${{ secrets.IIS_USER }}
-          password: ${{ secrets.IIS_PASS }}
-          source: ./published/
-          target: C:/App.Prueba/
+        shell: pwsh
+        run: |
+          $username = "${{ secrets.IIS_USER }}"
+          $password = ConvertTo-SecureString "${{ secrets.IIS_PASS }}" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+
+          # Establecer conexión remota
+          Invoke-Command -ComputerName ${{ secrets.IIS_HOST }} -Credential $credential -ScriptBlock {
+            param($source, $target)
+            
+            # Crear el directorio de destino si no existe
+            if (-Not (Test-Path -Path $target)) {
+              New-Item -ItemType Directory -Force -Path $target
+            }
+
+            # Copiar archivos
+            Copy-Item -Path $source/* -Destination $target -Recurse -Force
+          } -ArgumentList "$(pwd)/published", "C:/App.Prueba/"
