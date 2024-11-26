@@ -1,0 +1,36 @@
+name: Deploy to IIS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      # 1. Checkout del código fuente
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Configuración de .NET Core
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0  # Cambia según tu versión de .NET
+
+      # 3. Publicar la aplicación
+      - name: Publish app
+        run: |
+          dotnet publish -c Release -o published
+
+      # 4. Copiar archivos al servidor IIS
+      - name: Deploy to IIS
+        uses: appleboy/scp-action@v0.1.0
+        with:
+          host: ${{ secrets.IIS_HOST }}
+          username: ${{ secrets.IIS_USER }}
+          password: ${{ secrets.IIS_PASS }}
+          source: ./published/
+          target: C:/App.Prueba/  # Cambia según tu configuración en IIS
