@@ -32,6 +32,20 @@ jobs:
     - name: Publish app
       run: dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj --configuration Release --output ./published
 
+    # Nuevo paso: Probar conexión remota
+    - name: Test Remote Connection
+      shell: pwsh
+      env:
+        SERVER: ${{ secrets.IIS_HOST }}
+        USERNAME: ${{ secrets.IIS_USER }}
+        PASSWORD: ${{ secrets.IIS_PASS }}
+      run: |
+        $server = $env:SERVER
+        $username = $env:USERNAME
+        $password = ConvertTo-SecureString $env:PASSWORD -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock { Get-ChildItem C:\ }
+
     # 6. Desplegar en IIS
     - name: Deploy to IIS
       run: |
