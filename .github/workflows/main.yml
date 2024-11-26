@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # 2. Configuración de .NET Core
+    # 2. Configuración de .NET
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -30,7 +30,7 @@ jobs:
 
     # 5. Publicar aplicación
     - name: Publish app
-      run: dotnet publish App.Prueba/App.Prueba.csproj --configuration Release --output ./published
+      run: dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj --configuration Release --output ./published
 
     # 6. Desplegar en IIS
     - name: Deploy to IIS
@@ -40,6 +40,10 @@ jobs:
         $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
         Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-          New-Item -Path "C:\inetpub\wwwroot\App.Prueba" -ItemType Directory -Force
-          Copy-Item -Path "./published/*" -Destination "C:\inetpub\wwwroot\App.Prueba" -Recurse -Force
+          New-Item -Path "C:\inetpub\wwwroot\Api.Prueba" -ItemType Directory -Force
+          Copy-Item -Path "./published/*" -Destination "C:\inetpub\wwwroot\Api.Prueba" -Recurse -Force
         }
+
+    # 7. Limpieza (opcional)
+    - name: Cleanup
+      run: Remove-Item -Path ./published -Recurse -Force
