@@ -3,7 +3,7 @@ name: Deploy to IIS
 on:
   push:
     branches:
-      - main
+      - main  # Cambia si usas otra rama
 
 jobs:
   build-and-deploy:
@@ -23,7 +23,7 @@ jobs:
       # 3. Publicar la aplicación
       - name: Publish app
         run: |
-          dotnet publish -c Release -o published
+          dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj -c Release -o published
 
       # 4. Copiar archivos al servidor IIS
       - name: Deploy to IIS
@@ -33,4 +33,4 @@ jobs:
           username: ${{ secrets.IIS_USER }}
           password: ${{ secrets.IIS_PASS }}
           source: ./published/
-          target: C:/App.Prueba/  # Cambia según tu configuración en IIS
+          target: C:/App.Prueba/
