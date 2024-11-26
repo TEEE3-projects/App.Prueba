@@ -32,22 +32,25 @@ jobs:
     - name: Publish app
       run: dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj --configuration Release --output ./published
 
-    # Nuevo paso: Probar conexión remota
+    # 6. Agregar TrustedHosts
+    - name: Add TrustedHosts
+      shell: pwsh
+      run: |
+        Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "t3-dev-iis.teee3.com" -Force
+
+    # 7. Probar conexión remota
     - name: Test Remote Connection
       shell: pwsh
-      env:
-        SERVER: ${{ secrets.IIS_HOST }}
-        USERNAME: ${{ secrets.IIS_USER }}
-        PASSWORD: ${{ secrets.IIS_PASS }}
       run: |
-        $server = $env:SERVER
-        $username = $env:USERNAME
-        $password = ConvertTo-SecureString $env:PASSWORD -AsPlainText -Force
+        $server = "t3-dev-iis.teee3.com"
+        $username = "jose.maria@teee3.com"
+        $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
         Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock { Get-ChildItem C:\ }
 
-    # 6. Desplegar en IIS
+    # 8. Desplegar en IIS
     - name: Deploy to IIS
+      shell: pwsh
       run: |
         $server = "t3-dev-iis.teee3.com"
         $username = "jose.maria@teee3.com"
@@ -58,6 +61,6 @@ jobs:
           Copy-Item -Path "./published/*" -Destination "C:\inetpub\wwwroot\Api.Prueba" -Recurse -Force
         }
 
-    # 7. Limpieza (opcional)
+    # 9. Limpieza (opcional)
     - name: Cleanup
       run: Remove-Item -Path ./published -Recurse -Force
