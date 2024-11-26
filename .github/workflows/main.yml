@@ -3,7 +3,7 @@ name: Deploy to IIS
 on:
   push:
     branches:
-      - main  # Cambia si usas otra rama
+      - main
 
 jobs:
   build-and-deploy:
@@ -18,30 +18,36 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0  # Cambia según tu versión de .NET
+          dotnet-version: 6.0  # Cambia si usas otra versión de .NET
 
       # 3. Publicar la aplicación
       - name: Publish app
         run: |
           dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj -c Release -o published
 
-      # 4. Desplegar a IIS usando PowerShell
+      # 4. Configurar TrustedHosts
+      - name: Configure TrustedHosts
+        shell: pwsh
+        run: |
+          Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "${{ secrets.IIS_HOST }}" -Force
+
+      # 5. Desplegar a IIS usando PowerShell Remoting
       - name: Deploy to IIS
         shell: pwsh
         run: |
+          $server = "${{ secrets.IIS_HOST }}"
           $username = "${{ secrets.IIS_USER }}"
           $password = ConvertTo-SecureString "${{ secrets.IIS_PASS }}" -AsPlainText -Force
           $credential = New-Object System.Management.Automation.PSCredential($username, $password)
 
-          # Establecer conexión remota
-          Invoke-Command -ComputerName ${{ secrets.IIS_HOST }} -Credential $credential -ScriptBlock {
+          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
             param($source, $target)
-            
+
             # Crear el directorio de destino si no existe
             if (-Not (Test-Path -Path $target)) {
               New-Item -ItemType Directory -Force -Path $target
             }
 
-            # Copiar archivos
+            # Copiar archivos al servidor
             Copy-Item -Path $source/* -Destination $target -Recurse -Force
           } -ArgumentList "$(pwd)/published", "C:/App.Prueba/"
