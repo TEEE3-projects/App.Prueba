@@ -14,35 +14,33 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # 2. Configuración de .NET Core
+    # 2. Configuración de .NET
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '7.0' # Cambia a la versión de .NET que uses
+        dotnet-version: '7.0'
 
-    # 3. Restaurar dependencias y compilar
+    # 3. Restaurar dependencias
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore App.Prueba/App.Prueba.sln
 
+    # 4. Compilar proyecto
     - name: Build project
-      run: dotnet build --configuration Release
+      run: dotnet build App.Prueba/App.Prueba.sln --configuration Release --no-restore
 
-    # 4. Publicar la aplicación
+    # 5. Publicar la aplicación
     - name: Publish app
-      run: dotnet publish -c Release -o published
+      run: dotnet publish App.Prueba/App.Prueba.sln --configuration Release --output ./published --no-build
 
-    # 5. Desplegar a IIS
+    # 6. Deploy a IIS
     - name: Deploy to IIS
       run: |
-        $username = "${{ secrets.IIS_USER }}"
-        $password = ConvertTo-SecureString "${{ secrets.IIS_PASS }}" -AsPlainText -Force
-        $server = "${{ secrets.IIS_HOST }}"
-        $credential = New-Object System.Management.Automation.PSCredential ($username, $password)
-        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            # Copiar los archivos publicados al directorio del sitio IIS
-            Copy-Item -Path "${{ github.workspace }}\published\*" -Destination "C:\inetpub\wwwroot\App.Prueba" -Recurse -Force
-        }
+        $username = "jose.maria@teee3.com"
+        $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+        $server = "t3-dev-iis.teee3.com"
 
-    # (Opcional) Limpiar los artefactos temporales
-    - name: Cleanup
-      run: Remove-Item -Recurse -Force published
+        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+          param ($source, $destination)
+          Copy-Item -Path $source -Destination $destination -Recurse -Force
+        } -ArgumentList "$(pwd)/published", "C:\App.Prueba"
