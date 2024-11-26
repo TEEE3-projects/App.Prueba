@@ -10,44 +10,39 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1. Checkout del código fuente
-      - name: Checkout code
-        uses: actions/checkout@v3
+    # 1. Checkout del código fuente
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # 2. Configuración de .NET Core
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 6.0  # Cambia si usas otra versión de .NET
+    # 2. Configuración de .NET Core
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0' # Cambia a la versión de .NET que uses
 
-      # 3. Publicar la aplicación
-      - name: Publish app
-        run: |
-          dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj -c Release -o published
+    # 3. Restaurar dependencias y compilar
+    - name: Restore dependencies
+      run: dotnet restore
 
-      # 4. Configurar TrustedHosts
-      - name: Configure TrustedHosts
-        shell: pwsh
-        run: |
-          Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "${{ secrets.IIS_HOST }}" -Force
+    - name: Build project
+      run: dotnet build --configuration Release
 
-      # 5. Desplegar a IIS usando PowerShell Remoting
-      - name: Deploy to IIS
-        shell: pwsh
-        run: |
-          $server = "${{ secrets.IIS_HOST }}"
-          $username = "${{ secrets.IIS_USER }}"
-          $password = ConvertTo-SecureString "${{ secrets.IIS_PASS }}" -AsPlainText -Force
-          $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+    # 4. Publicar la aplicación
+    - name: Publish app
+      run: dotnet publish -c Release -o published
 
-          Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
-            param($source, $target)
+    # 5. Desplegar a IIS
+    - name: Deploy to IIS
+      run: |
+        $username = "${{ secrets.IIS_USER }}"
+        $password = ConvertTo-SecureString "${{ secrets.IIS_PASS }}" -AsPlainText -Force
+        $server = "${{ secrets.IIS_HOST }}"
+        $credential = New-Object System.Management.Automation.PSCredential ($username, $password)
+        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+            # Copiar los archivos publicados al directorio del sitio IIS
+            Copy-Item -Path "${{ github.workspace }}\published\*" -Destination "C:\inetpub\wwwroot\App.Prueba" -Recurse -Force
+        }
 
-            # Crear el directorio de destino si no existe
-            if (-Not (Test-Path -Path $target)) {
-              New-Item -ItemType Directory -Force -Path $target
-            }
-
-            # Copiar archivos al servidor
-            Copy-Item -Path $source/* -Destination $target -Recurse -Force
-          } -ArgumentList "$(pwd)/published", "C:/App.Prueba/"
+    # (Opcional) Limpiar los artefactos temporales
+    - name: Cleanup
+      run: Remove-Item -Recurse -Force published
