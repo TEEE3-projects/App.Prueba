@@ -38,7 +38,7 @@ jobs:
       run: |
         Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "t3-dev-iis.teee3.com" -Force
 
-    # 7. Probar conexión remota
+    # 7. Probar conexión remota en puerto 4443 con HTTPS
     - name: Test Remote Connection
       shell: pwsh
       run: |
@@ -46,9 +46,9 @@ jobs:
         $username = "jose.maria@teee3.com"
         $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
-        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock { Get-ChildItem C:\ }
+        Test-WSMan -ComputerName $server -Port 4443 -UseSSL
 
-    # 8. Desplegar en IIS
+    # 8. Desplegar en IIS usando puerto 4443 con HTTPS
     - name: Deploy to IIS
       shell: pwsh
       run: |
@@ -56,7 +56,7 @@ jobs:
         $username = "jose.maria@teee3.com"
         $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
-        Invoke-Command -ComputerName $server -Credential $credential -ScriptBlock {
+        Invoke-Command -ComputerName $server -Port 4443 -UseSSL -Credential $credential -ScriptBlock {
           New-Item -Path "C:\inetpub\wwwroot\Api.Prueba" -ItemType Directory -Force
           Copy-Item -Path "./published/*" -Destination "C:\inetpub\wwwroot\Api.Prueba" -Recurse -Force
         }
