@@ -32,17 +32,17 @@ jobs:
     - name: Publish app
       run: dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj --configuration Release --output ./published
 
-    # 6. Agregar TrustedHosts
+    # 6. Agregar TrustedHosts (usando la IP para mayor confiabilidad)
     - name: Add TrustedHosts
       shell: pwsh
       run: |
-        Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "t3-dev-iis.teee3.com" -Force
+        Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "10.90.102.202" -Force
 
     # 7. Probar conexión remota en puerto 5985 con HTTP
     - name: Test Remote Connection
       shell: pwsh
       run: |
-        $server = "t3-dev-iis.teee3.com"
+        $server = "10.90.102.202" # Usando la IP en lugar del hostname
         $username = "jose.maria@teee3.com"
         $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
@@ -52,7 +52,7 @@ jobs:
     - name: Deploy to IIS
       shell: pwsh
       run: |
-        $server = "t3-dev-iis.teee3.com"
+        $server = "10.90.102.202" # Usando la IP en lugar del hostname
         $username = "jose.maria@teee3.com"
         $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
         $credential = New-Object System.Management.Automation.PSCredential($username, $password)
