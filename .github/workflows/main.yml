@@ -41,9 +41,21 @@ jobs:
         password: "Clave3.Gambit$!"
         port: 22
         script: |
-          mkdir -p C:\inetpub\wwwroot\Api.Prueba
-          xcopy /S /E /Y "./published" "C:\inetpub\wwwroot\Api.Prueba"
+          mkdir -p "C:\App.Prueba"
+          xcopy /S /E /Y "./published" "C:\App.Prueba"
 
-    # 7. Limpieza (opcional)
+    # 7. Reiniciar el sitio en IIS
+    - name: Restart IIS Site
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: "10.90.102.202"
+        username: "jose.maria@teee3.com"
+        password: "Clave3.Gambit$!"
+        port: 22
+        script: |
+          Import-Module WebAdministration
+          Restart-WebAppPool -Name "Api.Prueba"
+
+    # 8. Limpieza (opcional)
     - name: Cleanup
       run: Remove-Item -Path ./published -Recurse -Force
