@@ -1,4 +1,4 @@
-name: Deploy to IIS via SSH
+name: Deploy to IIS
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     # 1. Checkout del código fuente
@@ -32,30 +32,35 @@ jobs:
     - name: Publish app
       run: dotnet publish App.Prueba/Api.Prueba/Api.Prueba.csproj --configuration Release --output ./published
 
-    # 6. Desplegar en IIS usando SSH
+    # 6. Agregar TrustedHosts (usando la IP para mayor confiabilidad)
+    - name: Add TrustedHosts
+      shell: pwsh
+      run: |
+        Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "10.90.102.202" -Force
+
+    # 7. Probar conexión remota en puerto 5985 con HTTP
+    - name: Test Remote Connection
+      shell: pwsh
+      run: |
+        $server = "10.90.102.202" # Usando la IP en lugar del hostname
+        $username = "jose.maria@teee3.com"
+        $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+        Test-WSMan -ComputerName $server -Port 5985 -Credential $credential
+
+    # 8. Desplegar en IIS usando puerto 5985 con HTTP
     - name: Deploy to IIS
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: "10.90.102.202"
-        username: "jose.maria@teee3.com"
-        password: "Clave3.Gambit$!"
-        port: 22
-        script: |
-          mkdir -p "C:\App.Prueba"
-          xcopy /S /E /Y "./published" "C:\App.Prueba"
+      shell: pwsh
+      run: |
+        $server = "10.90.102.202" # Usando la IP en lugar del hostname
+        $username = "jose.maria@teee3.com"
+        $password = ConvertTo-SecureString "Clave3.Gambit$!" -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $password)
+        Invoke-Command -ComputerName $server -Port 5985 -Credential $credential -ScriptBlock {
+          New-Item -Path "C:\inetpub\wwwroot\Api.Prueba" -ItemType Directory -Force
+          Copy-Item -Path "./published/*" -Destination "C:\inetpub\wwwroot\Api.Prueba" -Recurse -Force
+        }
 
-    # 7. Reiniciar el sitio en IIS
-    - name: Restart IIS Site
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: "10.90.102.202"
-        username: "jose.maria@teee3.com"
-        password: "Clave3.Gambit$!"
-        port: 22
-        script: |
-          Import-Module WebAdministration
-          Restart-WebAppPool -Name "Api.Prueba"
-
-    # 8. Limpieza (opcional)
+    # 9. Limpieza (opcional)
     - name: Cleanup
       run: Remove-Item -Path ./published -Recurse -Force
